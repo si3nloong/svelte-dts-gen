@@ -1,8 +1,8 @@
+import path from "node:path";
 import { createEventDispatcher } from "svelte";
 import ts from "typescript";
-import path from "node:path";
-import { toPaskalCase } from "../util.js";
 import { walk } from "svelte/compiler";
+import { toPaskalCase } from "../util.js";
 
 class SvelteTransformer {
   /**
@@ -341,7 +341,6 @@ class SvelteTransformer {
 
     // Write events
     template += `\n\nexport interface ${this.#componentName}Events {`;
-    console.log(this.#events.length);
     if (this.#events.length > 0) {
       this.#events.forEach((event) => {
         template += `\n\t${event.name}?: WindowEventMap["${event.name}"];`;

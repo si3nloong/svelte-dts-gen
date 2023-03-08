@@ -1,3 +1,9 @@
+/**
+ * Convert string to PaskalCase
+ *
+ * @param {string} str
+ * @returns {string}
+ */
 export function toPaskalCase(str) {
   // Replace all non-alphanumeric characters with spaces
   str = str.replace(/[^A-Za-z0-9]/g, " ");

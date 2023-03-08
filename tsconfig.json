@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "allowJs": true,
+    "outDir": "./types",
+    "target": "es2015",
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "allowSyntheticDefaultImports": true,
+    "importsNotUsedAsValues": "remove",
+    "strict": true,
+    "baseUrl": "./src",
+    "types": []
+  },
+  "include": ["src"],
+  "exclude": ["__sapper__/*", "src/*.test.js"]
+}

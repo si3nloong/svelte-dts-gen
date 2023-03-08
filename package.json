@@ -2,8 +2,8 @@
   "name": "svelte-dtsgen",
   "version": "1.0.0",
   "type": "module",
-  "license": "MIT",
   "description": "",
+  "license": "MIT",
   "engines": {
     "npm": ">=8.0.0",
     "node": ">=17.0.0"
@@ -12,10 +12,18 @@
   "svelte": "./src/index.js",
   "main": "./src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "tsc": "rm -rf ./types && tsc -p tsconfig.json",
+    "test": "node --test src/"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "svelte-dts",
+    "dts"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/si3nloong/svelte-dtsgen"
+  },
+  "author": "Si3nLoong <sianloong90@gmail.com> (https://github.com/si3nloong)",
   "dependencies": {
     "commander": "^10.0.0",
     "svelte": "^3.55.1",
