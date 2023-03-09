@@ -19,8 +19,8 @@
     "url": "https://github.com/si3nloong/svelte-dtsgen/issues"
   },
   "scripts": {
-    "tsd": "rm -rf ./types && tsc -p tsconfig.json",
     "test": "node --test src/",
+    "tsd": "rm -rf ./types && tsc -p tsconfig.json",
     "build": "rollup -c && npm run tsd"
   },
   "keywords": [
