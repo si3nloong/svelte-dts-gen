@@ -28,6 +28,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node }}
+          cache: "npm"
 
       # - name: Cache dependencies
       #   id: cache-modules
@@ -40,7 +41,7 @@ jobs:
       - name: NPM Install
         # if: steps.cache-modules.outputs.cache-hit != 'true'
         run: |
-          npm install
+          npm ci
 
       - name: Run jest
         run: |
