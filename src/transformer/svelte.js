@@ -34,6 +34,9 @@ class SvelteTransformer {
   /** @type {{ name: string; type: string; isOptional: boolean }[]} */
   #props;
 
+  /** @type {string[]} */
+  #customEventsForSearch;
+
   /** @type {{ name: string; custom: boolean; }[]} */
   #events;
 
@@ -73,14 +76,13 @@ class SvelteTransformer {
     this.#events = [];
     this.#slotProps = [];
     this.#dir = dir;
-    // this.subdir = path.dirname(this.fileName).replace(this.dir, "");
+    this.#customEventsForSearch = [];
     this.#moduleName = moduleName;
     this.#isDefault = isDefault;
     this.#typesForSearch = [];
+    // this.subdir = path.dirname(this.fileName).replace(this.dir, "");
     // this.declarationNode = [];
     this.#declarationImports = [];
-    console.log("Filename ->", this.#fileName);
-    console.log("ModuleName ->", this.#moduleName);
   }
 
   /**
@@ -181,11 +183,8 @@ class SvelteTransformer {
     node.declarationList.declarations.forEach((declaration) => {
       const name = declaration.name.getText(this.#sourceFile);
 
-      console.log("Declaration ->");
       let type = "any";
       let isOptional = false;
-
-      console.log(declaration.flags, ts.NodeFlags.Const);
 
       if (declaration.type) {
         type = declaration.type.getText(this.#sourceFile);
@@ -224,7 +223,6 @@ class SvelteTransformer {
             type = "boolean";
             break;
         }
-        // console.log("Kind ->", declaration.initializer.kind);
       }
 
       this.#props.push({ name, type, isOptional, readOnly });
@@ -236,49 +234,77 @@ class SvelteTransformer {
    * @param {ts.VariableStatement} node
    */
   async #compileEvent(node) {
-    console.log("EventNode ->", node);
     node.declarationList.declarations.forEach((declaration) => {
-      console.log(declaration);
+      this.#customEventsForSearch.push(
+        declaration.name.getText(this.#sourceFile)
+      );
       if (
         declaration.initializer &&
         ts.isCallExpression(declaration.initializer) &&
         declaration.initializer.typeArguments
       ) {
-        declaration.initializer.typeArguments.forEach((item) => {
-          if (ts.isTypeLiteralNode(item)) {
-            item.members.forEach((member) => {
-              if (ts.isPropertySignature(member)) {
-                const name = member.name.getText(this.sourceFile);
-                const type = member.type?.getText(this.sourceFile) || "any";
-
-                if (member.type && ts.isTypeReferenceNode(member.type)) {
-                  this.#addTypeForSearch(member.type);
-                }
-
-                this.events.push({ name, type });
-              }
-            });
-          }
-        });
+        //   declaration.initializer.typeArguments.forEach((item) => {
+        //     if (ts.isTypeLiteralNode(item)) {
+        //       item.members.forEach((member) => {
+        //         if (ts.isPropertySignature(member)) {
+        //           const name = member.name.getText(this.sourceFile);
+        //           const type = member.type?.getText(this.sourceFile) || "any";
+        //           if (member.type && ts.isTypeReferenceNode(member.type)) {
+        //             this.#addTypeForSearch(member.type);
+        //           }
+        //           this.#events.push({ name, type });
+        //         }
+        //       });
+        //     }
+        //   });
       }
     });
   }
 
+  /**
+   *
+   * @param {ts.ExpressionStatement} node
+   */
+  #compileExpression(node) {
+    if (ts.isCallExpression(node.expression)) {
+      if (node.expression.arguments.length <= 0) return;
+      const event = node.expression.arguments[0];
+      // Event name must be string or identifier or template
+      if (
+        !(
+          ts.isStringLiteral(event) ||
+          ts.isIdentifier(event) ||
+          ts.isTemplateExpression(event)
+        )
+      )
+        return;
+      console.log(event.getFullText(this.#sourceFile));
+      console.log(event);
+      this.#events.push({
+        name: event.getText(this.#sourceFile),
+        custom: true,
+      });
+    }
+  }
+
   #exec() {
-    ts.forEachChild(this.#sourceFile, (node /** @type {ts.Node} */) => {
+    ts.forEachChild(this.#sourceFile, (node) => {
       if (ts.isVariableStatement(node)) {
-        // console.log("Node ->", this.#isExportModifier(node), node);
         if (this.#isExportModifier(node)) {
           this.#compileProperty(node);
         } else if (this.#isEventDispatcher(node)) {
-          console.log("isEventDispatcher!");
           this.#compileEvent(node);
         }
+      } else if (
+        this.#customEventsForSearch.length > 0 &&
+        ts.isExpressionStatement(node)
+      ) {
+        this.#compileExpression(node);
       }
     });
 
     this.#typesForSearch.forEach((item) => {
-      console.log(item);
+      // console.log(item);
     });
     // ts.SyntaxKind[0];
     // console.log(this.#ast.html);
@@ -297,11 +323,7 @@ class SvelteTransformer {
        */
       enter: (node, parent) => {
         if (node.type === "EventHandler") {
-          console.log(node);
-          console.log(node.name);
-          if (node.expression) {
-            return;
-          }
+          if (node.expression) return;
           // If event forwarding, we should push it
           this.#events.push({ name: node.name });
         }
@@ -340,10 +362,15 @@ class SvelteTransformer {
     template += `}`;
 
     // Write events
+    console.log(this.#events);
     template += `\n\nexport interface ${this.#componentName}Events {`;
     if (this.#events.length > 0) {
       this.#events.forEach((event) => {
-        template += `\n\t${event.name}?: WindowEventMap["${event.name}"];`;
+        if (event.custom) {
+          template += `\n\t${event.name}?: CustomEvent<{}>;`;
+        } else {
+          template += `\n\t${event.name}?: WindowEventMap["${event.name}"];`;
+        }
       });
       template += "\n";
     }

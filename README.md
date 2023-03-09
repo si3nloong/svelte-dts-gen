@@ -1,4 +1,4 @@
-# Svelte Generator
+# Svelte dts generator
 
 > Typescript declaration generator for svelte with typescript. Create the declaration files for your library and project. These are the main characteristics of this library:
 
