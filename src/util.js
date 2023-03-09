@@ -1,5 +1,5 @@
 /**
- * Convert string to PaskalCase
+ * Convert string to PaskalCase.
  *
  * @param {string} str
  * @returns {string}
