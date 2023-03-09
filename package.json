@@ -6,8 +6,8 @@
   "description": "",
   "license": "MIT",
   "engines": {
-    "npm": ">=8.0.0",
-    "node": ">=17.0.0"
+    "npm": ">=7.0.0",
+    "node": ">=18.0.0"
   },
   "types": "./types",
   "svelte": "./src/index.js",
