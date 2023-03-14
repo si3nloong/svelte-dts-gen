@@ -21,8 +21,8 @@
     "url": "https://github.com/si3nloong/svelte-dtsgen/issues"
   },
   "scripts": {
-    "test:unit": "node --test src/",
-    "test": "node ./test/index.js",
+    "test:unit": "node --test ./src/",
+    "test": "node --test ./test",
     "tsd": "rm -rf ./types && tsc -p tsdef.json",
     "build": "rm -rf ./dist && rollup -c && npm run tsd"
   },
