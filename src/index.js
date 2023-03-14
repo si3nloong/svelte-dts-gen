@@ -1,1 +1,2 @@
-export default {};
+import DtsGenerator from "./generator";
+export default DtsGenerator;

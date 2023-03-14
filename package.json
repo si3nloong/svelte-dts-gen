@@ -4,14 +4,16 @@
   "type": "module",
   "module": "dist/index.mjs",
   "description": "",
+  "bin": {
+    "svelte-dtsgen": "dist/cli/index.js"
+  },
   "license": "MIT",
   "engines": {
     "npm": ">=7.0.0",
     "node": ">=18.0.0"
   },
   "types": "./types",
-  "svelte": "./src/index.js",
-  "main": "./src/index.js",
+  "main": "dist/index.js",
   "exports": {
     "./package.json": "./package.json"
   },
@@ -19,9 +21,10 @@
     "url": "https://github.com/si3nloong/svelte-dtsgen/issues"
   },
   "scripts": {
-    "test": "node --test src/",
+    "test:unit": "node --test src/",
+    "test": "node ./test/index.js",
     "tsd": "rm -rf ./types && tsc -p tsconfig.json",
-    "build": "rollup -c && npm run tsd"
+    "build": "rm -rf ./dist && rollup -c && npm run tsd"
   },
   "keywords": [
     "svelte-dts",
@@ -34,10 +37,10 @@
   "author": "Si3nLoong <sianloong90@gmail.com> (https://github.com/si3nloong)",
   "dependencies": {
     "commander": "^10.0.0",
-    "svelte": "^3.55.1",
+    "svelte": "^3.56.0",
     "typescript": "^4.9.5"
   },
   "devDependencies": {
-    "rollup": "^3.18.0"
+    "rollup": "^3.19.1"
   }
 }
