@@ -1,2 +1,2 @@
-declare const _default: {};
-export default _default;
+export default DtsGenerator;
+import DtsGenerator from "./generator";

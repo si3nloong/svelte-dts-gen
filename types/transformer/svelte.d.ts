@@ -10,7 +10,10 @@ declare class SvelteTransformer {
      * @param {boolean} isDefault
      */
     constructor(content: string, fileName: string, ast: any, dir: string, moduleName: string, isDefault: boolean);
-    /** @type {Promise<string>} */
+    /**
+     *
+     * @returns {Promise<string>}
+     */
     toString(): Promise<string>;
     #private;
 }

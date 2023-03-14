@@ -2,10 +2,10 @@
   "name": "svelte-dtsgen",
   "version": "1.0.0",
   "type": "module",
-  "module": "dist/index.mjs",
+  "module": "./dist/index.mjs",
   "description": "",
   "bin": {
-    "svelte-dtsgen": "dist/cli/index.js"
+    "svelte-dtsgen": "./bin/cli.js"
   },
   "license": "MIT",
   "engines": {
@@ -13,7 +13,7 @@
     "node": ">=18.0.0"
   },
   "types": "./types",
-  "main": "dist/index.js",
+  "main": "./dist/index.js",
   "exports": {
     "./package.json": "./package.json"
   },
@@ -23,7 +23,7 @@
   "scripts": {
     "test:unit": "node --test src/",
     "test": "node ./test/index.js",
-    "tsd": "rm -rf ./types && tsc -p tsconfig.json",
+    "tsd": "rm -rf ./types && tsc -p tsdef.json",
     "build": "rm -rf ./dist && rollup -c && npm run tsd"
   },
   "keywords": [
