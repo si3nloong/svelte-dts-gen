@@ -4,7 +4,7 @@ import DtsGenerator from "./generator.js";
 const program = new Command();
 
 program
-  .name("svelte-dtsgen")
+  .name("svelte-dts-gen")
   .description("CLI to generate svelte dts files")
   .version("1.0.0");
 

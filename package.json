@@ -1,11 +1,11 @@
 {
-  "name": "svelte-dtsgen",
+  "name": "svelte-dts-gen",
   "version": "1.0.0",
   "type": "module",
   "module": "./dist/index.mjs",
   "description": "",
   "bin": {
-    "svelte-dtsgen": "./bin/cli.js"
+    "svelte-dts-gen": "./bin/cli.js"
   },
   "license": "MIT",
   "engines": {
@@ -18,7 +18,7 @@
     "./package.json": "./package.json"
   },
   "bugs": {
-    "url": "https://github.com/si3nloong/svelte-dtsgen/issues"
+    "url": "https://github.com/si3nloong/svelte-dts-gen/issues"
   },
   "scripts": {
     "test:unit": "node --test ./src/",
@@ -32,7 +32,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/si3nloong/svelte-dtsgen"
+    "url": "https://github.com/si3nloong/svelte-dts-gen"
   },
   "author": "Si3nLoong <sianloong90@gmail.com> (https://github.com/si3nloong)",
   "dependencies": {
