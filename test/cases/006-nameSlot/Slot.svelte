@@ -9,7 +9,3 @@
     <footer><slot name="footer" /></footer>
   </aside>
 {/if}
-
-<style>
-  /* your styles go here */
-</style>

@@ -11,21 +11,24 @@ class SvelteTransformer {
   #sourceFile;
 
   /**
+   * Input file directory
+   * @type {string}
+   */
+  #dir;
+
+  /**
    * Svelte file name
-   *
    * @type {string}
    */
   #fileName;
 
   /**
-   *
+   * Svelte dts component name
+   * @type {string}
    */
   #componentName;
 
-  /** @type {string} */
-  #dir;
-
-  /** @type {string} */
+  /** @type {?string} */
   #moduleName;
 
   /** @type {import("svelte/types/compiler/interfaces").Ast} */
@@ -34,14 +37,17 @@ class SvelteTransformer {
   /** @type {{ name: string; type: string; isOptional: boolean }[]} */
   #props;
 
-  /** @type {string[]} */
-  #customEventsForSearch;
-
-  /** @type {{ name: string; custom: boolean; }[]} */
+  /** @type {Map<string, { name: string; type: string; custom: boolean }[]>} */
   #events;
 
-  /** @type {{ name: string; type: string; }[]} */
-  #slotProps;
+  /** @type {Map<string, { name: string }[]>} */
+  #slots;
+
+  /** @type {string[]} */
+  #typesForSearch;
+
+  /** @type {string[]} */
+  #customEventsForSearch;
 
   /**
    * @type {boolean}
@@ -49,7 +55,7 @@ class SvelteTransformer {
   #isDefault;
 
   /** @type {string[]} */
-  #typesForSearch;
+  #declarationNodes;
 
   /** @type {string[]} */
   #declarationImports;
@@ -57,31 +63,32 @@ class SvelteTransformer {
   /**
    *
    * @param {string} content
-   * @param {string} fileName
    * @param {import("svelte/types/compiler/interfaces").Ast} ast
    * @param {string} dir
+   * @param {string} fileName
    * @param {string} moduleName
    * @param {boolean} isDefault
    */
-  constructor(content, fileName, ast, dir, moduleName, isDefault) {
+  constructor(content, ast, dir, fileName, moduleName, isDefault) {
     this.#sourceFile = ts.createSourceFile(
       fileName,
       content,
       ts.ScriptTarget.Latest
     );
-    this.#fileName = path.basename(fileName);
-    this.#componentName = toPaskalCase(path.basename(fileName));
+    this.#fileName = fileName;
+    this.#componentName = toPaskalCase(
+      fileName.replace(path.extname(fileName), "")
+    );
     this.#ast = ast;
     this.#props = [];
-    this.#events = [];
-    this.#slotProps = [];
+    this.#events = new Map();
+    this.#slots = new Map();
     this.#dir = dir;
     this.#customEventsForSearch = [];
+    this.#typesForSearch = [];
     this.#moduleName = moduleName;
     this.#isDefault = isDefault;
-    this.#typesForSearch = [];
-    // this.subdir = path.dirname(this.fileName).replace(this.dir, "");
-    // this.declarationNode = [];
+    this.#declarationNodes = [];
     this.#declarationImports = [];
   }
 
@@ -183,8 +190,10 @@ class SvelteTransformer {
     node.declarationList.declarations.forEach((declaration) => {
       const name = declaration.name.getText(this.#sourceFile);
 
-      let type = "any";
-      let isOptional = false;
+      let type = "any",
+        isOptional = false;
+
+      console.log(declaration);
 
       if (declaration.type) {
         type = declaration.type.getText(this.#sourceFile);
@@ -214,14 +223,20 @@ class SvelteTransformer {
         }
       } else if (declaration.initializer) {
         isOptional = true;
-        switch (declaration.initializer.kind) {
-          case ts.SyntaxKind.StringLiteral:
-            type = "string";
-            break;
-          case ts.SyntaxKind.FalseKeyword:
-          case ts.SyntaxKind.TrueKeyword:
-            type = "boolean";
-            break;
+        console.log(declaration.initializer);
+        // If it's a template literal, it's always string
+        if (ts.isTemplateLiteral(declaration.initializer)) {
+          type = "string";
+        } else {
+          switch (declaration.initializer.kind) {
+            case ts.SyntaxKind.StringLiteral:
+              type = "string";
+              break;
+            case ts.SyntaxKind.FalseKeyword:
+            case ts.SyntaxKind.TrueKeyword:
+              type = "boolean";
+              break;
+          }
         }
       }
 
@@ -233,30 +248,33 @@ class SvelteTransformer {
    *
    * @param {ts.VariableStatement} node
    */
-  async #compileEvent(node) {
+  async #compileEventDispatcher(node) {
     node.declarationList.declarations.forEach((declaration) => {
-      this.#customEventsForSearch.push(
-        declaration.name.getText(this.#sourceFile)
-      );
       if (
         declaration.initializer &&
         ts.isCallExpression(declaration.initializer) &&
         declaration.initializer.typeArguments
       ) {
-        //   declaration.initializer.typeArguments.forEach((item) => {
-        //     if (ts.isTypeLiteralNode(item)) {
-        //       item.members.forEach((member) => {
-        //         if (ts.isPropertySignature(member)) {
-        //           const name = member.name.getText(this.sourceFile);
-        //           const type = member.type?.getText(this.sourceFile) || "any";
-        //           if (member.type && ts.isTypeReferenceNode(member.type)) {
-        //             this.#addTypeForSearch(member.type);
-        //           }
-        //           this.#events.push({ name, type });
-        //         }
-        //       });
-        //     }
-        //   });
+        declaration.initializer.typeArguments.forEach((arg) => {
+          console.log(ts.isTypeLiteralNode(arg), arg);
+          if (ts.isTypeLiteralNode(arg)) {
+            arg.members.forEach((member) => {
+              if (ts.isPropertySignature(member)) {
+                const name = member.name.getText(this.#sourceFile);
+                const type = member.type?.getText(this.#sourceFile) || "any";
+                if (member.type && ts.isTypeReferenceNode(member.type)) {
+                  this.#addTypeForSearch(member.type);
+                }
+                this.#events.set(name, { type, custom: true });
+              }
+            });
+          }
+        });
+      } else {
+        // If data type is not declared, we will put it to cache and process it later
+        this.#customEventsForSearch.push(
+          declaration.name.getText(this.#sourceFile)
+        );
       }
     });
   }
@@ -267,9 +285,12 @@ class SvelteTransformer {
    */
   #compileExpression(node) {
     if (ts.isCallExpression(node.expression)) {
-      if (node.expression.arguments.length <= 0) return;
-      const event = node.expression.arguments[0];
+      if (node.expression.arguments.length <= 0) {
+        return;
+      }
+
       // Event name must be string or identifier or template
+      const event = node.expression.arguments[0];
       if (
         !(
           ts.isStringLiteral(event) ||
@@ -280,11 +301,34 @@ class SvelteTransformer {
         return;
       }
 
-      this.#events.push({
-        name: event.getText(this.#sourceFile).replaceAll(`"`, ""),
+      this.#events.set(event.getText(this.#sourceFile).replaceAll(`"`, ""), {
         custom: true,
       });
     }
+  }
+
+  /**
+   *
+   * @param {import("svelte/types/compiler/interfaces").Attribute} node
+   */
+  #compileEvent(node) {
+    if (node.expression) return;
+    // If event forwarding, we should push it
+    this.#events.set(node.name, {});
+  }
+
+  /**
+   *
+   * @param {import("svelte/types/compiler/interfaces").Element} node
+   */
+  #compileSlot(node) {
+    const name = node.attributes.find((v) => v.name === "name");
+    if (!name) {
+      this.#slots.set("default", { name: "" });
+      return;
+    }
+
+    this.#slots.set(`${name.value[0].raw}`, {});
   }
 
   #exec() {
@@ -293,7 +337,7 @@ class SvelteTransformer {
         if (this.#isExportModifier(node)) {
           this.#compileProperty(node);
         } else if (this.#isEventDispatcher(node)) {
-          this.#compileEvent(node);
+          this.#compileEventDispatcher(node);
         }
       } else if (
         this.#customEventsForSearch.length > 0 &&
@@ -306,15 +350,7 @@ class SvelteTransformer {
     this.#typesForSearch.forEach((item) => {
       // console.log(item);
     });
-    // ts.SyntaxKind[0];
-    // console.log(this.#ast.html);
 
-    // if (this.#ast.html.type === "Slot" && node.attributes) {
-    //   node.attributes.forEach((item) =>
-    //     this.slotProps.push({ name: item.name, type: "any" })
-    //   );
-
-    console.log("debug --------------->");
     walk(this.#ast.html, {
       /**
        *
@@ -323,9 +359,10 @@ class SvelteTransformer {
        */
       enter: (node, parent) => {
         if (node.type === "EventHandler") {
-          if (node.expression) return;
-          // If event forwarding, we should push it
-          this.#events.push({ name: node.name });
+          this.#compileEvent(node);
+        }
+        if (node.type === "Slot") {
+          this.#compileSlot(node);
         }
         // console.log(node.type, node.type === "EventHandler");
         // console.log("Node ->", node);
@@ -344,7 +381,6 @@ class SvelteTransformer {
    */
   async toString() {
     this.#exec();
-    console.log("Properties ->", this.#props);
     const cli = "svelte-dts-gen";
     const version = "1.0.0";
     let template = `//\tCode generated by ${cli}, version ${version}. DO NOT EDIT.`;
@@ -355,9 +391,8 @@ class SvelteTransformer {
     template += `\n\nexport interface ${this.#componentName}Props {`;
     if (this.#props.length > 0) {
       this.#props.forEach((prop) => {
-        const propName = prop.isOptional ? `?` + prop.type : prop.type;
-        template += `\n\t${prop.name}: ${
-          prop.readOnly ? `Readonly<${propName}>` : propName
+        template += `\n\t${prop.name}${prop.isOptional ? "?" : ""}: ${
+          prop.readOnly ? `Readonly<${prop.type}>` : prop.type
         };`;
       });
       template += "\n";
@@ -365,38 +400,56 @@ class SvelteTransformer {
     template += `}`;
 
     // Write events
-    console.log(this.#events);
     template += `\n\nexport interface ${this.#componentName}Events {`;
-    if (this.#events.length > 0) {
-      this.#events.forEach((event) => {
-        if (event.custom) {
-          template += `\n\t${event.name}?: CustomEvent<any>;`;
-        } else {
-          template += `\n\t${event.name}?: WindowEventMap["${event.name}"];`;
-        }
-      });
+    if (this.#events.size > 0) {
+      Array.from(this.#events.keys())
+        .sort()
+        .forEach((k) => {
+          const event = this.#events.get(k);
+          if (event.custom) {
+            template += `\n\t${k}?: CustomEvent<${
+              event.type ? event.type : "any"
+            }>;`;
+          } else {
+            template += `\n\t${k}?: WindowEventMap["${k}"];`;
+          }
+        });
       template += "\n";
     }
     template += `}`;
 
     // Write slots
     template += `\n\nexport interface ${this.#componentName}Slots {`;
-    this.#slotProps.forEach((prop) => {
-      const propName = prop.isOptional ? `?` + prop.type : prop.type;
-      template += `\n\t${prop.name}: ${
-        prop.readOnly ? `Readonly<${propName}>` : propName
-      };`;
-    });
+    if (this.#slots.size > 0) {
+      Array.from(this.#slots.keys())
+        .sort()
+        .forEach((k) => {
+          template += `\n\t${k}: never;`;
+        });
+      template += "\n";
+    }
     template += `}`;
 
     template += `\n\ndeclare class ${
       this.#componentName
-    }Component extends SvelteComponentTyped<${this.#componentName}Props, ${
+    } extends SvelteComponentTyped<${this.#componentName}Props, ${
       this.#componentName
     }Events, ${this.#componentName}Slots> {`;
     template += `\n}`;
-    template += `\nexport default ${this.#componentName}Component;`;
+    template += `\nexport default ${this.#componentName};`;
     return template;
+  }
+
+  destructor() {
+    this.#sourceFile = null;
+    this.#ast = null;
+    this.#dir = "";
+    this.#props = [];
+    this.#events = null;
+    this.#slots = null;
+    this.#typesForSearch = [];
+    this.#customEventsForSearch = [];
+    this.#declarationImports = [];
   }
 }
 

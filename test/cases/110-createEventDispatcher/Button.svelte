@@ -1,7 +1,7 @@
-<script lang="ts">
+<script>
   import { createEventDispatcher } from "svelte";
 
-  const d = createEventDispatcher<{ click: string; xxx: {} }>();
+  const d = createEventDispatcher();
   d("click", "ok");
 </script>
 

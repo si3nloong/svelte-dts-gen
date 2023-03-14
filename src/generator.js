@@ -4,6 +4,12 @@ import ts from "typescript";
 import { preprocess, compile as svelteCompile } from "svelte/compiler";
 import SvelteTransformer from "./transformer/svelte.js";
 
+const defaultOpts = {
+  outDir: "",
+  compact: false,
+  force: false,
+};
+
 class DtsGenerator {
   /**
    * Lazy initialise callback
@@ -29,29 +35,30 @@ class DtsGenerator {
   /**
    *
    * @param {string} input
-   * @param {*} options
+   * @param {defaultOpts} options
    */
   constructor(input, options) {
-    this.#initCallback = this.#init(input, options);
+    this.#initCallback = this.#init(input, Object.assign(defaultOpts, options));
   }
 
   /**
    *
    * @param {string} input
-   * @param {*} options
+   * @param {defaultOpts} options
    * @returns {Promise<void>}
    */
   async #init(input, options) {
     /** @type {{ default: { types: string }}} */
-    const packageJson = await import(path.join(process.cwd(), "package.json"), {
-      assert: { type: "json" },
-    });
+    // const packageJson = await import(path.join(process.cwd(), "package.json"), {
+    //   assert: { type: "json" },
+    // });
     // console.log(packageJson);
     this.#input = path.isAbsolute(input)
       ? input
       : path.join(process.cwd(), input);
     this.#dir = path.dirname(this.#input);
-    this.#output = options.output || packageJson.default.types;
+    // this.#output = options.output || packageJson.default.types;
+    this.#output = options.outDir || "";
     this.#extensions = options.extensions || [".svelte", ".ts", ".js"];
   }
 
@@ -60,12 +67,12 @@ class DtsGenerator {
    */
   async readAll() {
     await this.#initCallback;
-    console.log("Dir =>", this.#dir);
+    console.log("Dir ->", this.#dir);
     const files = await fs.promises.readdir(this.#dir, ["node_modules"]);
     while (files.length > 0) {
       const file = files[0];
       console.log("File ->", file);
-      this.#readFile(`${this.#dir}/${file}`);
+      await this.#readFile(path.join(this.#dir, file));
       files.shift();
     }
   }
@@ -78,9 +85,10 @@ class DtsGenerator {
   async #readFile(filename) {
     const pathParser = path.parse(filename);
     const extension = path.extname(filename);
-    // if ([".test", ".spec"].includes(pathParser.base) >= 0) {
-    //   return;
-    // }
+
+    if ([".test.", ".spec."].includes(pathParser.base)) {
+      return;
+    }
 
     if (!this.#extensions.includes(pathParser.ext)) {
       return;
@@ -90,7 +98,7 @@ class DtsGenerator {
       case ".svelte":
         this.#readSvelteFile(filename);
       case ".ts":
-      case ".js":
+      case (".js", ".cjs", ".mjs"):
     }
   }
 
@@ -110,8 +118,7 @@ class DtsGenerator {
       fileContent,
       [
         {
-          script: ({ content, attributes }) => {
-            console.log(attributes);
+          script: ({ content }) => {
             scriptTsContent = content;
 
             const resultTranspile = ts.transpileModule(content, {
@@ -125,9 +132,7 @@ class DtsGenerator {
             });
 
             return { code: resultTranspile.outputText };
-            // }
-
-            return { code: content };
+            // return { code: content };
           },
         },
       ],
@@ -137,24 +142,32 @@ class DtsGenerator {
     const compiled = svelteCompile(resultPreprocess.code, {
       filename,
     });
+    const pathParser = path.parse(filename);
     const transformer = new SvelteTransformer(
       scriptTsContent,
-      filename,
       compiled.ast,
-      this.#dir
+      this.#dir,
+      pathParser.base
     );
 
-    const typesPath = path.join(process.cwd(), this.#output);
-    fs.mkdirSync(typesPath, { recursive: true });
-    fs.promises.writeFile(
-      `${typesPath}/${path.basename(filename)}.d.ts`,
-      await transformer.toString()
+    const typesPath = path.join(
+      process.cwd(),
+      this.#output,
+      this.#dir.replace(process.cwd(), "")
     );
+    fs.mkdirSync(typesPath, { recursive: true });
+    // Construct the output file name, should be end with `.d.ts`
+    const outputFile = path.join(typesPath, `${pathParser.base}.d.ts`);
+    fs.writeFileSync(outputFile, await transformer.toString());
   }
 
   async write() {
-    const typesPath = path.join(process.cwd(), this.#output);
-    // console.log(typesPath);
+    const typesPath = path.join(
+      process.cwd(),
+      this.#output,
+      this.#dir.replace(process.cwd(), "")
+    );
+    fs.mkdirSync(typesPath, { recursive: true });
   }
 }
 

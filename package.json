@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "module": "./dist/index.mjs",
-  "description": "",
+  "description": "Generate the Typescript declaration files for your Svelte library and project.",
   "bin": {
     "svelte-dts-gen": "./bin/cli.js"
   },
@@ -28,7 +28,8 @@
   },
   "keywords": [
     "svelte-dts",
-    "dts"
+    "svelte",
+    "typescript"
   ],
   "repository": {
     "type": "git",

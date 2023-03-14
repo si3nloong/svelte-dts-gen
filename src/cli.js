@@ -1,26 +1,30 @@
 import { Command, Option } from "commander";
 import DtsGenerator from "./generator.js";
 
-const program = new Command();
+(async function () {
+  const program = new Command();
 
-program
-  .name("svelte-dts-gen")
-  .description("CLI to generate svelte dts files")
-  .version("1.0.0");
+  program
+    .name("svelte-dts-gen")
+    .description("CLI to generate svelte dts files")
+    .version("1.0.0");
 
-program
-  .argument("<src>", "source")
-  .addOption(new Option("-s, --outDir", "output directory"));
+  program
+    .argument("<src>", "source")
+    .addOption(new Option("--outDir <output>", "output directory"))
+    .addOption(
+      new Option("--compact", "output the definition file in compact mode")
+    )
+    .addOption(
+      new Option("-f --force", "force overwrite output file if it exists")
+    );
 
-program.parse(process.argv);
+  program.parse(process.argv);
 
-const options = program.opts();
-console.log("Arguments ->", program.args);
-// const limit = options.first ? 1 : undefined;
-console.log("Options ->", options);
+  const options = program.opts();
+  console.log("Arguments ->", program.args);
+  console.log("Options ->", options);
 
-const generator = new DtsGenerator(
-  "./test/cases/201-createEventDispatcher/*.svelte",
-  options
-);
-generator.readAll();
+  const generator = new DtsGenerator(program.args[0], options);
+  await generator.readAll();
+})();
