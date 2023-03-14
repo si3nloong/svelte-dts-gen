@@ -3,9 +3,13 @@ declare class DtsGenerator {
     /**
      *
      * @param {string} input
-     * @param {*} options
+     * @param {defaultOpts} options
      */
-    constructor(input: string, options: any);
+    constructor(input: string, options: {
+        outDir: string;
+        compact: boolean;
+        force: boolean;
+    });
     /**
      * @returns {Promise<void>}
      */

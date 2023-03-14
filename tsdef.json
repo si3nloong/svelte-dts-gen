@@ -11,7 +11,7 @@
     "importsNotUsedAsValues": "remove",
     "strict": true,
     "baseUrl": "./src",
-    "types": []
+    "types": ["node"]
   },
   "include": ["src"],
   "exclude": ["__sapper__/*", "src/*.test.js"]
