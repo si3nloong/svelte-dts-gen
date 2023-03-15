@@ -1,6 +1,6 @@
-import * as ts from "typescript";
 import path from "node:path";
 // import { promises as fs } from "node:fs";
+import * as ts from "typescript";
 
 class TypescriptTransformer {
   /** @type {string} */

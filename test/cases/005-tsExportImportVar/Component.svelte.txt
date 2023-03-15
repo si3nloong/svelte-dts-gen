@@ -4,7 +4,7 @@ import type { SvelteComponentTyped } from "svelte/internal";
 
 export interface ComponentProps {
 	title?: string;
-	number?: string;
+	message: Msg;
 }
 
 export interface ComponentEvents {}

@@ -3,15 +3,13 @@
 import type { SvelteComponentTyped } from "svelte/internal";
 
 export interface SlotProps {
-	open?: boolean;
+	title?: string;
 }
 
 export interface SlotEvents {}
 
 export interface SlotSlots {
 	default: never;
-	footer: never;
-	header: never;
 }
 
 declare class Slot extends SvelteComponentTyped<SlotProps, SlotEvents, SlotSlots> {

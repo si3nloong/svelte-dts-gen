@@ -2,10 +2,7 @@
 
 import type { SvelteComponentTyped } from "svelte/internal";
 
-export interface ComponentProps {
-	title?: string;
-	number?: string;
-}
+export interface ComponentProps {}
 
 export interface ComponentEvents {}
 

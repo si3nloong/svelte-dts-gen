@@ -1,8 +1,13 @@
 import path from "node:path";
 import fs from "node:fs";
 import ts from "typescript";
-import { preprocess, compile as svelteCompile } from "svelte/compiler";
+// import preprocess from "svelte-preprocess";
+import {
+  preprocess as sveltePreprocess,
+  compile as svelteCompile,
+} from "svelte/compiler";
 import SvelteTransformer from "./transformer/svelte.js";
+import { walkSync } from "./util.js";
 
 const defaultOpts = {
   outDir: "",
@@ -11,12 +16,6 @@ const defaultOpts = {
 };
 
 class DtsGenerator {
-  /**
-   * Lazy initialise callback
-   * @type {Promise<void>}
-   */
-  #initCallback;
-
   /**
    * Valid file extensions
    * @type {string[]}
@@ -32,81 +31,96 @@ class DtsGenerator {
   /** @type {string} */
   #output;
 
+  /** @type {boolean} */
+  #overwrite;
+
   /**
    *
    * @param {string} input
    * @param {defaultOpts} options
    */
   constructor(input, options) {
-    this.#initCallback = this.#init(input, Object.assign(defaultOpts, options));
+    this.#init(input, Object.assign(defaultOpts, options));
   }
 
   /**
    *
    * @param {string} input
    * @param {defaultOpts} options
-   * @returns {Promise<void>}
+   * @returns {void}
    */
-  async #init(input, options) {
-    /** @type {{ default: { types: string }}} */
-    // const packageJson = await import(path.join(process.cwd(), "package.json"), {
-    //   assert: { type: "json" },
-    // });
-    // console.log(packageJson);
+  #init(input, options) {
     this.#input = path.isAbsolute(input)
       ? input
       : path.join(process.cwd(), input);
     this.#dir = path.dirname(this.#input);
-    // this.#output = options.output || packageJson.default.types;
-    this.#output = options.outDir || "";
+    // Output and input folder will be similar
+    this.#output = options.outDir || this.#dir;
     this.#extensions = options.extensions || [".svelte", ".ts", ".js"];
+    this.#overwrite =
+      typeof options.force === "boolean" ? options.force : false;
   }
 
   /**
+   * @param {Optional<{ each: (v: { output: string[] }) => void }>} opts
    * @returns {Promise<void>}
    */
-  async readAll() {
-    await this.#initCallback;
-    console.log("Dir ->", this.#dir);
-    const files = await fs.promises.readdir(this.#dir, ["node_modules"]);
-    while (files.length > 0) {
-      const file = files[0];
-      console.log("File ->", file);
-      await this.#readFile(path.join(this.#dir, file));
-      files.shift();
+  async run(opts) {
+    opts = Object.assign({ each: () => {} }, opts);
+    let files = function* () {
+      yield this.#input;
+    }.bind(this)();
+    if (fs.lstatSync(this.#input).isDirectory()) {
+      files = walkSync(this.#input);
+    }
+    for (const file of files) {
+      // console.log("File ->", file);
+      const pathParser = path.parse(file);
+
+      if ([".test.", ".spec."].includes(pathParser.base)) {
+        continue;
+      }
+
+      if (!this.#extensions.includes(pathParser.ext)) {
+        continue;
+      }
+
+      if (/.*\.d\.ts$/gi.test(pathParser.base)) {
+        continue;
+      }
+
+      const outputs = await this.#readFile(file);
+      await opts.each({ input: file, outputs });
     }
   }
 
   /**
    *
    * @param {string} filename
-   * @returns {Promise<void>}
+   * @returns {Promise<string[]>}
    */
   async #readFile(filename) {
-    const pathParser = path.parse(filename);
     const extension = path.extname(filename);
 
-    if ([".test.", ".spec."].includes(pathParser.base)) {
-      return;
-    }
-
-    if (!this.#extensions.includes(pathParser.ext)) {
-      return;
-    }
-
+    let result = [];
     switch (extension) {
       case ".svelte":
-        this.#readSvelteFile(filename);
+        result = await this.#readSvelteFile(filename);
+        break;
       case ".ts":
-      case (".js", ".cjs", ".mjs"):
+        break;
+      // case (".js", ".cjs", ".mjs"):
+      // break;
     }
+
+    return result;
   }
 
   /**
    * Read `.svelte` file and transpile it
    *
    * @param {string} filename
-   * @returns {Promise<void>}
+   * @returns {Promise<string[]>}
    */
   async #readSvelteFile(filename) {
     const fileContent = await fs.promises.readFile(filename, {
@@ -114,8 +128,9 @@ class DtsGenerator {
     });
 
     let scriptTsContent = "";
-    const resultPreprocess = await preprocess(
+    const resultPreprocess = await sveltePreprocess(
       fileContent,
+      // sveltePreprocess(),
       [
         {
           script: ({ content }) => {
@@ -150,15 +165,18 @@ class DtsGenerator {
       pathParser.base
     );
 
-    const typesPath = path.join(
-      process.cwd(),
-      this.#output,
-      this.#dir.replace(process.cwd(), "")
-    );
-    fs.mkdirSync(typesPath, { recursive: true });
     // Construct the output file name, should be end with `.d.ts`
-    const outputFile = path.join(typesPath, `${pathParser.base}.d.ts`);
+    const outDir = path.join(
+      this.#output,
+      path.relative(this.#dir, path.dirname(filename))
+    );
+    fs.mkdirSync(outDir, { recursive: true });
+    const outputFile = path.join(outDir, `${pathParser.base}.d.ts`);
+    if (!this.#overwrite && fs.existsSync(outputFile)) {
+      return [];
+    }
     fs.writeFileSync(outputFile, await transformer.toString());
+    return [outputFile];
   }
 
   async write() {

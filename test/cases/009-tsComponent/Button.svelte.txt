@@ -3,10 +3,12 @@
 import type { SvelteComponentTyped } from "svelte/internal";
 
 export interface ButtonProps {
-	name?: string;
+	initialNumber: number;
 }
 
-export interface ButtonEvents {}
+export interface ButtonEvents {
+	change?: CustomEvent<number>;
+}
 
 export interface ButtonSlots {}
 
