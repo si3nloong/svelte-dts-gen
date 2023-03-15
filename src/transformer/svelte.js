@@ -77,7 +77,7 @@ class SvelteTransformer {
     );
     this.#fileName = fileName;
     this.#componentName = toPaskalCase(
-      fileName.replace(path.extname(fileName), "")
+      path.basename(this.#fileName, path.extname(fileName))
     );
     this.#ast = ast;
     this.#props = [];
@@ -172,6 +172,7 @@ class SvelteTransformer {
   /**
    *
    * @param {ts.VariableStatement} node
+   * @returns {void}
    */
   #compileProperty(node) {
     if (node.jsDoc) {
@@ -189,11 +190,8 @@ class SvelteTransformer {
 
     node.declarationList.declarations.forEach((declaration) => {
       const name = declaration.name.getText(this.#sourceFile);
-
-      let type = "any",
-        isOptional = false;
-
-      console.log(declaration);
+      let type = "any";
+      let isOptional = false;
 
       if (declaration.type) {
         type = declaration.type.getText(this.#sourceFile);
@@ -222,8 +220,8 @@ class SvelteTransformer {
           type = nameValidTypes.join(" | ");
         }
       } else if (declaration.initializer) {
+        // console.log(declaration.initializer);
         isOptional = true;
-        console.log(declaration.initializer);
         // If it's a template literal, it's always string
         if (ts.isTemplateLiteral(declaration.initializer)) {
           type = "string";
@@ -245,8 +243,9 @@ class SvelteTransformer {
   }
 
   /**
-   *
+   * Compile svelte event dispatcher node.
    * @param {ts.VariableStatement} node
+   * @returns {void}
    */
   async #compileEventDispatcher(node) {
     node.declarationList.declarations.forEach((declaration) => {
@@ -280,8 +279,9 @@ class SvelteTransformer {
   }
 
   /**
-   *
+   * Compile typescript expiression node.
    * @param {ts.ExpressionStatement} node
+   * @returns {void}
    */
   #compileExpression(node) {
     if (ts.isCallExpression(node.expression)) {
@@ -308,8 +308,9 @@ class SvelteTransformer {
   }
 
   /**
-   *
+   * Compile svelte event node.
    * @param {import("svelte/types/compiler/interfaces").Attribute} node
+   * @returns {void}
    */
   #compileEvent(node) {
     if (node.expression) return;
@@ -318,8 +319,9 @@ class SvelteTransformer {
   }
 
   /**
-   *
+   * Compile svelte slot node.
    * @param {import("svelte/types/compiler/interfaces").Element} node
+   * @returns {void}
    */
   #compileSlot(node) {
     const name = node.attributes.find((v) => v.name === "name");
@@ -331,6 +333,9 @@ class SvelteTransformer {
     this.#slots.set(`${name.value[0].raw}`, {});
   }
 
+  /**
+   * @returns {void}
+   */
   #exec() {
     ts.forEachChild(this.#sourceFile, (node) => {
       if (ts.isVariableStatement(node)) {
