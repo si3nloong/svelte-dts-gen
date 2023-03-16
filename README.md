@@ -6,11 +6,19 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/si3nloong/svelte-dts-gen/blob/master/LICENSE)
 [![Node.js CI](https://github.com/si3nloong/svelte-dts-gen/workflows/Matrix%20Testing/badge.svg)](https://github.com/si3nloong/svelte-dts-gen/actions/workflows/test.yml)
 
+## Requirement
+
+- Nodejs ^18.0.0
+
 ## Installation
 
 ```console
 npm i svelte-dts-gen
 ```
+
+## How it works
+
+The `svelte-dts-gen` interpret the properties, events and slot properties in the svelte code, using typescript and svelte compiler to generate the **TypeScript Declaration** files. `svelte-dts-gen` will generate the declaration based on typescript type, jsdoc, or javascript default type.
 
 ## License
 
