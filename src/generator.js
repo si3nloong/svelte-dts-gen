@@ -1,6 +1,6 @@
 import path from "node:path";
 import fs from "node:fs";
-import * as ts from "typescript";
+import ts from "typescript";
 // import preprocess from "svelte-preprocess";
 import {
   preprocess as sveltePreprocess,
