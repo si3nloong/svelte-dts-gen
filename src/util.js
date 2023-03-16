@@ -2,8 +2,10 @@ import path from "node:path";
 import fs from "node:fs";
 
 /**
+ * Enhance version of `fs.readdirSync` by walk recursively.
  *
  * @param {string} dir
+ * @returns {Generator<string, void, unknown>}
  */
 export function* walkSync(dir) {
   const files = fs.readdirSync(dir, { withFileTypes: true });

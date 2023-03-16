@@ -1,6 +1,6 @@
 import path from "node:path";
 import { createEventDispatcher } from "svelte";
-import ts from "typescript";
+import * as ts from "typescript";
 import { walk } from "svelte/compiler";
 import { toPaskalCase } from "../util.js";
 import packageJson from "../../package.json" assert { type: "json" };
