@@ -3,11 +3,12 @@
 import type { SvelteComponentTyped } from "svelte/internal";
 
 export interface ButtonProps {
-	title: string;
-	expanded: boolean;
-	num: number;
-	type?: readonly string;
 	disabled?: boolean;
+	expanded: boolean;
+	items: [];
+	num: number;
+	title: string;
+	type?: Readonly<string>;
 }
 
 export interface ButtonEvents {

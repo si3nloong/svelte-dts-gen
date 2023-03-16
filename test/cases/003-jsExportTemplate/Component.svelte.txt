@@ -3,8 +3,8 @@
 import type { SvelteComponentTyped } from "svelte/internal";
 
 export interface ComponentProps {
-	title?: string;
 	number?: string;
+	title?: string;
 }
 
 export interface ComponentEvents {}

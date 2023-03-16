@@ -1,8 +1,9 @@
 <script>
-  export let name = "";
+  export let name = "",
+    title = "Click Me";
 </script>
 
-<button {name}>Click me</button>
+<button {name}>{title}</button>
 
 <style>
   /* your styles go here */

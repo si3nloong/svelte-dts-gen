@@ -5,6 +5,120 @@ import { walk } from "svelte/compiler";
 import { toPaskalCase } from "../util.js";
 import packageJson from "../../package.json" assert { type: "json" };
 
+const htmlElementMap = {
+  a: "HTMLAnchorElement",
+  abbr: "HTMLElement",
+  address: "HTMLElement",
+  area: "HTMLAreaElement",
+  article: "HTMLElement",
+  aside: "HTMLElement",
+  audio: "HTMLAudioElement",
+  b: "HTMLElement",
+  base: "HTMLBaseElement",
+  bdi: "HTMLElement",
+  bdo: "HTMLElement",
+  blockquote: "HTMLQuoteElement",
+  body: "HTMLBodyElement",
+  br: "HTMLBRElement",
+  button: "HTMLButtonElement",
+  canvas: "HTMLCanvasElement",
+  caption: "HTMLTableCaptionElement",
+  cite: "HTMLElement",
+  code: "HTMLElement",
+  col: "HTMLTableColElement",
+  colgroup: "HTMLTableColElement",
+  data: "HTMLDataElement",
+  datalist: "HTMLDataListElement",
+  dd: "HTMLElement",
+  del: "HTMLModElement",
+  details: "HTMLDetailsElement",
+  dfn: "HTMLElement",
+  dialog: "HTMLDialogElement",
+  div: "HTMLDivElement",
+  dl: "HTMLDListElement",
+  dt: "HTMLElement",
+  em: "HTMLElement",
+  embed: "HTMLEmbedElement",
+  fieldset: "HTMLFieldSetElement",
+  figcaption: "HTMLElement",
+  figure: "HTMLElement",
+  footer: "HTMLElement",
+  form: "HTMLFormElement",
+  h1: "HTMLHeadingElement",
+  h2: "HTMLHeadingElement",
+  h3: "HTMLHeadingElement",
+  h4: "HTMLHeadingElement",
+  h5: "HTMLHeadingElement",
+  h6: "HTMLHeadingElement",
+  head: "HTMLHeadElement",
+  header: "HTMLElement",
+  hgroup: "HTMLElement",
+  hr: "HTMLHRElement",
+  html: "HTMLHtmlElement",
+  i: "HTMLElement",
+  iframe: "HTMLIFrameElement",
+  img: "HTMLImageElement",
+  input: "HTMLInputElement",
+  ins: "HTMLModElement",
+  kbd: "HTMLElement",
+  label: "HTMLLabelElement",
+  legend: "HTMLLegendElement",
+  li: "HTMLLIElement",
+  link: "HTMLLinkElement",
+  main: "HTMLElement",
+  map: "HTMLMapElement",
+  mark: "HTMLElement",
+  menu: "HTMLMenuElement",
+  meta: "HTMLMetaElement",
+  meter: "HTMLMeterElement",
+  nav: "HTMLElement",
+  noscript: "HTMLElement",
+  object: "HTMLObjectElement",
+  ol: "HTMLOListElement",
+  optgroup: "HTMLOptGroupElement",
+  option: "HTMLOptionElement",
+  output: "HTMLOutputElement",
+  p: "HTMLParagraphElement",
+  picture: "HTMLPictureElement",
+  pre: "HTMLPreElement",
+  progress: "HTMLProgressElement",
+  q: "HTMLQuoteElement",
+  rp: "HTMLElement",
+  rt: "HTMLElement",
+  ruby: "HTMLElement",
+  s: "HTMLElement",
+  samp: "HTMLElement",
+  script: "HTMLScriptElement",
+  section: "HTMLElement",
+  select: "HTMLSelectElement",
+  slot: "HTMLSlotElement",
+  small: "HTMLElement",
+  source: "HTMLSourceElement",
+  span: "HTMLSpanElement",
+  strong: "HTMLElement",
+  style: "HTMLStyleElement",
+  sub: "HTMLElement",
+  summary: "HTMLElement",
+  sup: "HTMLElement",
+  table: "HTMLTableElement",
+  tbody: "HTMLTableSectionElement",
+  td: "HTMLTableCellElement",
+  template: "HTMLTemplateElement",
+  textarea: "HTMLTextAreaElement",
+  tfoot: "HTMLTableSectionElement",
+  th: "HTMLTableCellElement",
+  thead: "HTMLTableSectionElement",
+  time: "HTMLTimeElement",
+  title: "HTMLTitleElement",
+  tr: "HTMLTableRowElement",
+  track: "HTMLTrackElement",
+  u: "HTMLElement",
+  ul: "HTMLUListElement",
+  var: "HTMLElement",
+  video: "HTMLVideoElement",
+  wbr: "HTMLElement",
+};
+
 class SvelteTransformer {
   /**
    * @type {ts.sourceFile}
@@ -44,7 +158,7 @@ class SvelteTransformer {
   /** @type {Map<string, { name: string }[]>} */
   #slots;
 
-  /** @type {string[]} */
+  /** @type {ts.ImportDeclaration[]} */
   #typesForSearch;
 
   /** @type {string[]} */
@@ -54,6 +168,11 @@ class SvelteTransformer {
    * @type {boolean}
    */
   #isDefault;
+
+  /**
+   * @type {string[]}
+   */
+  #restProps;
 
   /** @type {string[]} */
   #declarationNodes;
@@ -90,6 +209,7 @@ class SvelteTransformer {
     this.#typesForSearch = [];
     this.#moduleName = moduleName;
     this.#isDefault = isDefault;
+    this.#restProps = [];
     this.#declarationNodes = [];
     this.#declarationImports = [];
   }
@@ -102,8 +222,7 @@ class SvelteTransformer {
   #isExportModifier = (node) => {
     if (node.modifiers) {
       return node.modifiers.some(
-        (node /** @type {ts.Node} */) =>
-          node.kind === ts.SyntaxKind.ExportKeyword
+        (node) => node.kind === ts.SyntaxKind.ExportKeyword
       );
     }
 
@@ -131,7 +250,7 @@ class SvelteTransformer {
    * @param {ts.TypeReferenceNode} newType
    */
   #addTypeForSearch(newType) {
-    const includeType = this.#typesForSearch.map(
+    const includeType = this.#typesForSearch.some(
       (item) =>
         item.getText(this.#sourceFile) === newType.getText(this.#sourceFile)
     );
@@ -154,7 +273,7 @@ class SvelteTransformer {
     ) {
       const elements = node.importClause.namedBindings.elements;
       const newElements = elements.filter(
-        (element) => element.name.getText(this.sourceFile) === name
+        (element) => element.name.getText(this.#sourceFile) === name
       );
 
       if (newElements.length > 0) {
@@ -162,26 +281,13 @@ class SvelteTransformer {
           .map((item) => item.name.getText(this.#sourceFile))
           .join(", ");
 
-        this.declarationImport.push(
-          `import { ${importString} } from ${node.moduleSpecifier.getText(
-            this.sourceFile
+        this.#declarationImports.push(
+          `import type { ${importString} } from ${node.moduleSpecifier.getText(
+            this.#sourceFile
           )};`
         );
       }
     }
-  }
-
-  /**
-   *
-   * @param {ts.JSDoc} jsDoc
-   */
-  #compileJsDoc(jsDoc) {
-    // console.log(ts.getJSDocTags(jsDoc));
-    // console.log(ts.getJSDocType(jsDoc));
-    // console.log(ts.getJSDocTypeTag(jsDoc));
-    // jsDoc.tags.forEach((tag) => {
-    //   console.log(ts.getJSDocTags(tag));
-    // });
   }
 
   /**
@@ -216,6 +322,8 @@ class SvelteTransformer {
         type = declaration.type.getText(this.#sourceFile);
 
         if (ts.isTypeReferenceNode(declaration.type)) {
+          // console.log(declaration.type);
+          console.log(declaration.getText(this.#sourceFile));
           this.#addTypeForSearch(declaration.type);
         }
 
@@ -356,6 +464,14 @@ class SvelteTransformer {
    */
   #exec() {
     ts.forEachChild(this.#sourceFile, (node) => {
+      if (
+        node.importClause &&
+        ts.isImportDeclaration(node) &&
+        node.importClause.isTypeOnly
+      ) {
+        this.#declarationNodes.push(node);
+      }
+
       if (ts.isVariableStatement(node)) {
         if (this.#isExportModifier(node)) {
           this.#compileProperty(node);
@@ -370,13 +486,14 @@ class SvelteTransformer {
       }
     });
 
-    this.#typesForSearch.forEach((item) => {
-      // console.log(item);
+    this.#typesForSearch.forEach((search) => {
+      this.#declarationNodes.forEach((node) => {
+        this.#verifyImportDeclaration(node, search.getText(this.#sourceFile));
+      });
     });
 
     walk(this.#ast.html, {
       /**
-       *
        * @param {import("svelte/types/compiler/interfaces").TemplateNode} node
        * @param {Optional<import("svelte/types/compiler/interfaces").TemplateNode>} parent
        */
@@ -387,8 +504,18 @@ class SvelteTransformer {
         if (node.type === "Slot") {
           this.#compileSlot(node);
         }
-        // console.log(node.type, node.type === "EventHandler");
-        // console.log("Node ->", node);
+        if (node.type === "Element") {
+          /** @type {import("svelte/types/compiler/interfaces").Element} */
+          let n = node;
+          if (
+            n.attributes.some(
+              (attr) =>
+                attr.type === "Spread" && attr.expression.name === "$$restProps"
+            )
+          ) {
+            this.#restProps.push(node.name);
+          }
+        }
       },
     });
     // }
@@ -407,20 +534,38 @@ class SvelteTransformer {
     let template = `// Code generated by ${packageJson.name}, version ${packageJson.version}. DO NOT EDIT.`;
     template += `\n\nimport type { SvelteComponentTyped } from "svelte/internal";`;
 
-    // Write properties
-    template += `\n\nexport interface ${this.#componentName}Props {`;
-    if (this.#props.length > 0) {
-      this.#props.forEach((prop) => {
-        let propName = prop.name;
-        let propType = prop.type;
-        if (prop.isOptional) {
-          propName += "?";
-        }
-        if (prop.readOnly) {
-          propType = `readonly ${propType}`;
-        }
-        template += `\n\t${propName}: ${propType};`;
+    if (this.#declarationImports.length > 0) {
+      this.#declarationImports.forEach((declaration) => {
+        template += `\n${declaration}`;
       });
+    }
+
+    // Write properties
+    template += `\n\nexport interface ${this.#componentName}Props `;
+    if (this.#restProps.length > 0) {
+      template += `extends ${
+        this.#restProps[0] in htmlElementMap
+          ? htmlElementMap[this.#restProps[0]]
+          : "HTMLElement"
+      } `;
+    } else if (this.#restProps.length > 1) {
+      template += `extends HTMLElement `;
+    }
+    template += "{";
+    if (this.#props.length > 0) {
+      this.#props
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach((prop) => {
+          let propName = prop.name;
+          let propType = prop.type;
+          if (prop.isOptional) {
+            propName += "?";
+          }
+          if (prop.readOnly) {
+            propType = `Readonly<${propType}>`;
+          }
+          template += `\n\t${propName}: ${propType};`;
+        });
       template += "\n";
     }
     template += `}`;
@@ -482,9 +627,10 @@ class SvelteTransformer {
 /**
  *
  * @param {ts.SyntaxKind} kind
+ * @param {ts.TypeNode} node
  * @returns {string}
  */
-function getSyntaxKindString(kind) {
+function getSyntaxKindString(kind, node) {
   switch (kind) {
     case ts.SyntaxKind.StringKeyword:
       return "string";
@@ -492,6 +638,8 @@ function getSyntaxKindString(kind) {
       return "boolean";
     case ts.SyntaxKind.NumberKeyword:
       return "number";
+    case ts.SyntaxKind.ArrayType:
+      return "[]";
     // Add other cases as needed
     default:
       return ts.SyntaxKind[kind];

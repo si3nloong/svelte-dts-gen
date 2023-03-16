@@ -4,11 +4,11 @@
 
 [![npm version](https://badge.fury.io/js/svelte-dts-gen.svg)](https://www.npmjs.com/package/svelte-dts-gen)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/si3nloong/svelte-dts-gen/blob/master/LICENSE)
-[![Node.js CI](https://github.com/si3nloong/svelte-dts-gen/workflows/Node.js%20CI/badge.svg)](https://github.com/si3nloong/svelte-dts-gen/actions?query=workflow%3A%22Node.js+CI%22)
+[![Node.js CI](https://github.com/si3nloong/svelte-dts-gen/workflows/Matrix%20Testing/badge.svg)](https://github.com/si3nloong/svelte-dts-gen/actions/workflows/test.yml)
 
 ## Installation
 
-```bash
+```console
 npm i svelte-dts-gen
 ```
 

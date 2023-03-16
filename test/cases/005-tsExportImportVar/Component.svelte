@@ -1,12 +1,15 @@
 <script lang="ts">
-  import type { Msg } from "./index";
+  import type { Animal, Msg } from "./index";
 
   export let title = "";
-  export let message: Msg;
+  export let message: Msg, animal: Animal;
+  export let animal2: Animal;
 </script>
 
 <h1>{title}</h1>
 <div>{message}</div>
+{@debug animal}
+{@debug animal2}
 
 <style>
 </style>

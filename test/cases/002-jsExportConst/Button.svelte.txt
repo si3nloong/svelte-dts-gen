@@ -3,8 +3,8 @@
 import type { SvelteComponentTyped } from "svelte/internal";
 
 export interface ButtonProps {
-	readonlyText?: readonly string;
 	name?: string;
+	readonlyText?: Readonly<string>;
 }
 
 export interface ButtonEvents {

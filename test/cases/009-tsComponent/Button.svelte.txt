@@ -3,6 +3,7 @@
 import type { SvelteComponentTyped } from "svelte/internal";
 
 export interface ButtonProps {
+	disabled?: boolean;
 	initialNumber: number;
 }
 
