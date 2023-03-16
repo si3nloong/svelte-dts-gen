@@ -3,8 +3,14 @@
 import type { SvelteComponentTyped } from "svelte/internal";
 
 export interface ButtonProps {
+	arr?: string[];
+	flag?: boolean;
+	list?: any[];
+	map?: Map<any, any>;
 	name?: string;
+	obj?: any;
 	readonlyText?: Readonly<string>;
+	ref?: any;
 }
 
 export interface ButtonEvents {

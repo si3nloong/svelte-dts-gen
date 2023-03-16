@@ -2,15 +2,13 @@
 
 import type { SvelteComponentTyped } from "svelte/internal";
 
-export interface ButtonProps {
-	disabled?: boolean;
-	name?: string;
-	title?: string;
-}
+export interface ButtonProps extends HTMLButtonElement {}
 
 export interface ButtonEvents {}
 
-export interface ButtonSlots {}
+export interface ButtonSlots {
+	default: never;
+}
 
 declare class Button extends SvelteComponentTyped<ButtonProps, ButtonEvents, ButtonSlots> {
 }

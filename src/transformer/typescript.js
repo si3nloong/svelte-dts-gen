@@ -31,13 +31,19 @@ class TypescriptTransformer {
     //   this.subdir = path.dirname(this.fileName).replace(this.dir, '');
     this.#moduleName = moduleName;
     this.#isDefault = isDefault;
+    this.#declaration = "";
   }
 
   /**
    * @returns {void}
    */
-  #exec() {
-    const options = { declaration: true, emitDeclarationOnly: true };
+  exec() {
+    /** @type {ts.CompilerOptions} */
+    const options = {
+      declaration: true,
+      emitDeclarationOnly: true,
+      allowJs: true,
+    };
     const host = ts.createCompilerHost(options);
     host.writeFile = (_, contents) => {
       this.#declaration = contents;
@@ -50,10 +56,8 @@ class TypescriptTransformer {
    * @returns {string}
    */
   toString() {
-    const pathParse = path.parse(this.#fileName);
-    let string = `declare module '${this.#moduleName}${this.#subdir}/${
-      pathParse.base
-    }' {\n`;
+    // const pathParse = path.parse(this.#fileName);
+    let string = ``;
     //   if (this.isDefault) {
     //     string = `declare module '${this.moduleName}' {\n`;
     //   }

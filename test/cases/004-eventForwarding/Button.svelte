@@ -2,7 +2,7 @@
   // your script goes here
 </script>
 
-<header {...$$restProps}><slot /></header>
+<button on:change on:click on:mousedown on:click={console.log}>A Button</button>
 
 <style>
   /* your styles go here */

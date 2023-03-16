@@ -2,13 +2,13 @@
 
 import type { SvelteComponentTyped } from "svelte/internal";
 
-export interface ButtonProps {
-	disabled?: boolean;
-	name?: string;
-	title?: string;
-}
+export interface ButtonProps {}
 
-export interface ButtonEvents {}
+export interface ButtonEvents {
+	change?: WindowEventMap["change"];
+	click?: WindowEventMap["click"];
+	mousedown?: WindowEventMap["mousedown"];
+}
 
 export interface ButtonSlots {}
 

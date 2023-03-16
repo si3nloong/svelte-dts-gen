@@ -1,0 +1,6 @@
+export type Msg = {
+    name: string;
+    id: number;
+};
+export declare class Animal {
+}

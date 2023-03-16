@@ -8,10 +8,10 @@ import { walkSync } from "../src/util.js";
 test("test cases", async () => {
   const rootDir = path.join(process.cwd(), "test/cases");
   for (const filePath of walkSync(rootDir)) {
-    const pathParser = path.parse(filePath);
-    if (![".svelte"].includes(pathParser.ext)) {
-      continue;
-    }
+    // const pathParser = path.parse(filePath);
+    // if (![".svelte"].includes(pathParser.ext)) {
+    //   continue;
+    // }
 
     const dtsGen = new DtsGenerator(filePath, {
       force: true,
@@ -20,6 +20,7 @@ test("test cases", async () => {
       /** @param {{ input: string; outputs: string[] }} */
       each: async ({ input, outputs }) => {
         while (outputs.length > 0) {
+          console.log(input);
           const output = outputs[0];
           const pathParser = path.parse(input);
           /** @type {string[]} */
